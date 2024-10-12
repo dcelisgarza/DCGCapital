@@ -1,0 +1,13 @@
+name = "DCGCapital"
+uuid = "bfb08ca5-75b0-42ec-88e3-42efd58e1a2d"
+authors = ["Daniel Celis Garza"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.11"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
