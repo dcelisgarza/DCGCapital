@@ -960,9 +960,9 @@ version = "0.10.3"
 
 [[deps.MutableArithmetics]]
 deps = ["LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "3eba928678787843e504c153a9b8e80d7d73ab17"
+git-tree-sha1 = "7768a4e5f2b372777a90c1758809333081a096a8"
 uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
-version = "1.5.0"
+version = "1.5.1"
 
 [[deps.NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
@@ -1172,7 +1172,7 @@ version = "1.4.3"
 deps = ["AverageShiftedHistograms", "Clustering", "DataFrames", "Dates", "Distances", "Distributions", "GLM", "Graphs", "JuMP", "LinearAlgebra", "MultivariateStats", "NearestCorrelationMatrix", "Optim", "PythonCall", "Random", "SimpleWeightedGraphs", "SmartAsserts", "SparseArrays", "Statistics", "StatsBase", "TimeSeries"]
 git-tree-sha1 = "93142c38eef72b5ffee7ee419bc138d08dd1cda8"
 repo-rev = "main"
-repo-url = "../PortfolioOptimiser.jl"
+repo-url = "https://github.com/dcelisgarza/PortfolioOptimiser.jl"
 uuid = "748726ae-2fc6-4ae6-b81c-5fed3516a822"
 version = "0.1.0"
 weakdeps = ["GraphRecipes", "StatsPlots"]
