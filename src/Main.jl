@@ -12,10 +12,13 @@ function (@main)(tickers, date0 = [DateTime(2000, 01, 01)],
 
     update_download_tickers(tickers, min_date0, max_date1, path, period)
     println("")
-    prices = join_ticker_prices(tickers, min_date0, max_date1, path)
 
+    prices = join_ticker_prices(tickers, min_date0, max_date1, path)
+    println("\nGenerating portfolios.")
     for (date0_i, date1_i) ∈ ProgressBar(zip(date0, date1))
-        prices_i = filter(:timestamp => x -> date0_i <= x <= date1_i, prices)
+        prices_i = TimeArray(filter(:timestamp => x -> date0_i <= x <= date1_i, prices);
+                             timestamp = :timestamp)
+        # Filter
     end
     return prices
 end
