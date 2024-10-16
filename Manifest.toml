@@ -2,7 +2,7 @@
 
 julia_version = "1.11.0"
 manifest_format = "2.0"
-project_hash = "9122689a7e57ae84819df1a72bb19d7bd83dbf63"
+project_hash = "c7f5cf0fa8c60776379513ec65a57028186634b0"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -960,9 +960,9 @@ version = "0.10.3"
 
 [[deps.MutableArithmetics]]
 deps = ["LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "7768a4e5f2b372777a90c1758809333081a096a8"
+git-tree-sha1 = "90077f1e79de8c9c7c8a90644494411111f4e07b"
 uuid = "d8a4904e-b15c-11e9-3269-09a3773c0cb0"
-version = "1.5.1"
+version = "1.5.2"
 
 [[deps.NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
@@ -994,9 +994,9 @@ version = "0.4.20"
 
 [[deps.NetworkLayout]]
 deps = ["GeometryBasics", "LinearAlgebra", "Random", "Requires", "StaticArrays"]
-git-tree-sha1 = "91bb2fedff8e43793650e7a677ccda6e6e6e166b"
+git-tree-sha1 = "0c51e19351dc1eecc61bc23caaf2262e7ba71973"
 uuid = "46757867-2c16-5918-afeb-47bfcb05e46a"
-version = "0.4.6"
+version = "0.4.7"
 weakdeps = ["Graphs"]
 
     [deps.NetworkLayout.extensions]
@@ -1170,7 +1170,7 @@ version = "1.4.3"
 
 [[deps.PortfolioOptimiser]]
 deps = ["AverageShiftedHistograms", "Clustering", "DataFrames", "Dates", "Distances", "Distributions", "GLM", "Graphs", "JuMP", "LinearAlgebra", "MultivariateStats", "NearestCorrelationMatrix", "Optim", "PythonCall", "Random", "SimpleWeightedGraphs", "SmartAsserts", "SparseArrays", "Statistics", "StatsBase", "TimeSeries"]
-git-tree-sha1 = "d242fb0ef1572c6b871b80a5f9967ea28727ebf4"
+git-tree-sha1 = "0bb3c3738c73a4c6cf0de70df98afe6f1454f2d2"
 repo-rev = "main"
 repo-url = "https://github.com/dcelisgarza/PortfolioOptimiser.jl"
 uuid = "748726ae-2fc6-4ae6-b81c-5fed3516a822"

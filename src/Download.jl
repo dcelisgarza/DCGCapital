@@ -1,5 +1,13 @@
-function download_ticker(ticker, date0 = DateTime(2000, 01, 01),
-                         date1 = DateTime(today() + Day(1)), path = "./Data/Tickers/")
+@kwdef struct DownloadOpt{T1, T2, T3, T4}
+    period::T1 = Day(1)
+    date0::T2 = DateTime(2000, 01, 01)
+    date1::T3 = DateTime(today() + period)
+    path::T4 = "./Data/Tickers/"
+end
+function download_ticker(ticker, dopt::DownloadOpt = DownloadOpt)
+    date0 = dopt.date0
+    date1 = dopt.date1
+    path = dopt.path
     try
         prices = get_prices(TimeArray, ticker; startdt = date0, enddt = date1)
         mkpath(path)
@@ -10,13 +18,15 @@ function download_ticker(ticker, date0 = DateTime(2000, 01, 01),
     end
     return nothing
 end
-function update_download_ticker(ticker, date0 = DateTime(2000, 01, 01),
-                                date1 = DateTime(today() + Day(1)),
-                                path = "./Data/Tickers/", period = Day(1))
+function update_download_ticker(ticker, dopt::DownloadOpt = DownloadOpt())
+    path = dopt.path
     filename = joinpath(path, "$ticker.csv")
     if !isfile(filename)
-        download_ticker(ticker, date0, date1, path)
+        download_ticker(ticker, dopt)
     else
+        period = dopt.period
+        date0 = dopt.date0
+        date1 = dopt.date1
         try
             prices = CSV.read(filename, DataFrame)
             date0_old, date1_old = extrema(prices[!, :timestamp])
@@ -50,13 +60,12 @@ function update_download_ticker(ticker, date0 = DateTime(2000, 01, 01),
     end
     return nothing
 end
-function update_download_tickers(tickers, date0 = DateTime(2000, 01, 01),
-                                 date1 = DateTime(today() + Day(1)),
-                                 path = "./Data/Tickers/", period = Day(1))
+function update_download_tickers(tickers, dopt::DownloadOpt = DownloadOpt())
     println("Downloading and updating data.")
     for ticker ∈ ProgressBar(tickers)
-        update_download_ticker(ticker, date0, date1, path, period)
+        update_download_ticker(ticker, dopt)
     end
     return nothing
 end
-export download_ticker, update_download_ticker, update_download_tickers
+
+export DownloadOpt, download_ticker, update_download_ticker, update_download_tickers

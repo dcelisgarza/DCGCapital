@@ -1,6 +1,15 @@
-function load_ticker_prices(ticker, date0 = DateTime(2000, 01, 01),
-                            date1 = DateTime(today() + Day(1)), path = "./Data/Tickers/",
-                            select = [:timestamp, :adjclose])
+@kwdef struct LoadOpt{T1, T2, T3, T4, T5}
+    period::T1 = Day(1)
+    date0::T2 = DateTime(2000, 01, 01)
+    date1::T3 = DateTime(today() + period)
+    path::T4 = "./Data/Tickers/"
+    select::T5 = [:timestamp, :adjclose]
+end
+function load_ticker_prices(ticker, lopt::LoadOpt = LoadOpt())
+    date0 = lopt.date0
+    date1 = lopt.date1
+    path = lopt.path
+    select = lopt.select
     filename = joinpath(path, "$ticker.csv")
     if !isa(date0, DateTime)
         date0 = DateTime(date0)
@@ -17,13 +26,12 @@ function load_ticker_prices(ticker, date0 = DateTime(2000, 01, 01),
 
     return prices
 end
-function join_ticker_prices(tickers, date0 = DateTime(2000, 01, 01),
-                            date1 = DateTime(today() + Day(1)), path = "./Data/Tickers/",
-                            select = [:timestamp, :adjclose])
+function join_ticker_prices(tickers, lopt::LoadOpt = LoadOpt())
+    select = lopt.select
     println("Generating master prices dataframe.")
     prices = DataFrame(; timestamp = DateTime[])
     for ticker ∈ ProgressBar(tickers)
-        ticker_prices = load_ticker_prices(ticker, date0, date1, path, select)
+        ticker_prices = load_ticker_prices(ticker, lopt)
         if isempty(ticker_prices)
             continue
         end
@@ -44,4 +52,4 @@ function join_ticker_prices(tickers, date0 = DateTime(2000, 01, 01),
 
     return dropmissing!(prices)
 end
-export load_ticker_prices, join_ticker_prices
+export LoadOpt, load_ticker_prices, join_ticker_prices

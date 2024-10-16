@@ -1,25 +1,20 @@
-function (@main)(tickers, date0 = [DateTime(2000, 01, 01)],
-                 date1 = [DateTime(today() + Day(1))], path = "./Data/Tickers/",
-                 period = Day(1))
-    if !isa(eltype(date0), DateTime)
-        date0 = DateTime.(date0)
-    end
-    if !isa(eltype(date1), DateTime)
-        date1 = DateTime.(date1)
+
+function (@main)(dmkt, gmkt, solvers = Dict(), alloc_solvers = Dict(), download = true,
+                 generate = true, mopt::MarketOpt = MarketOpt(),
+                 dopt::DownloadOpt = DownloadOpt(), lopt::LoadOpt = LoadOpt(),
+                 gopt::GenOpt = GenOpt())
+    if download
+        update_download_tickers(shuffle!(get_all_market_tickers(dmkt, mopt)), dopt)
     end
 
-    min_date0, max_date1 = minimum(date0), minimum(date1)
-
-    update_download_tickers(tickers, min_date0, max_date1, path, period)
-    println("")
-
-    prices = join_ticker_prices(tickers, min_date0, max_date1, path)
-    println("\nGenerating portfolios.")
-    for (date0_i, date1_i) ∈ ProgressBar(zip(date0, date1))
-        prices_i = TimeArray(filter(:timestamp => x -> date0_i <= x <= date1_i, prices);
-                             timestamp = :timestamp)
-        # Filter
+    if generate
+        update_download_tickers(shuffle!(get_all_market_tickers(gmkt, mopt)), dopt)
     end
-    return prices
+    # prices = join_ticker_prices(tickers, lopt)
+    # portfolios_vec = generate_portfolios(prices, solvers, alloc_solvers, gopt)
+
+    # return portfolios_vec
+
+    return nothing
 end
 export main
