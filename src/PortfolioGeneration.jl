@@ -8,32 +8,6 @@
     best::T7 = 0.2
     worst::T8 = 0.2
 end
-@kwdef struct OptimOpt{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14}
-    rms::T1 = SD()
-    cov_type::T2 = PortCovCor()
-    cor_type::T3 = PortCovCor()
-    dist_type::T4 = DistCanonical()
-    hclust_alg::T5 = HAC()
-    hclust_opt::T6 = HCOpt()
-    short::T7 = false
-    short_budget::T8 = 0.2
-    short_u::T9 = 0.2
-    long_u::T10 = 1.0
-    rf::T11 = 3.5 / 100 / 252
-    obj::T12 = Sharpe(; rf = rf)
-    kelly::T13 = EKelly()
-    alloc_method::T14 = LP()
-end
-@kwdef struct GenOpt{T1, T2, T3, T4, T5, T6, T7}
-    period::T1 = Day(1)
-    date0::T2 = DateTime(2000, 01, 01)
-    date1::T3 = DateTime(today() + period)
-    investment::T4 = 1e6
-    conversion::T5 = 1
-    fopt::T6 = FilterOpt()
-    oopt::T7 = OptimOpt()
-end
-
 function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
     rms = fopt.rms
     cov_type = fopt.cov_type
@@ -60,11 +34,15 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
     # Percentile after n steps
     f(x, n) = 1 - exp(log(x) / n)
 
-    if !iszero(best)
+    if isone(best)
+        best_tickers = colnames(prices)
+    elseif iszero(best)
+        nothing
+    else
         best_tickers = colnames(prices)
         q = f(best, length(rms))
         println("Filter best portfolios.")
-        for rm ∈ ProgressBar(rms)
+        for rm ∈ rms
             kurt_idx, skurt_idx, set_skew, set_sskew = PortfolioOptimiser.find_cov_kurt_skew_rm(rms)[2:end]
             portfolio = HCPortfolio(; prices = prices[best_tickers], solvers = solvers)
             asset_statistics!(portfolio; cov_type = cov_type, cor_type = cor_type,
@@ -88,11 +66,15 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
         append!(all_tickers, best_tickers)
     end
 
-    if !iszero(worst)
+    if isone(worst)
+        worst_tickers = colnames(prices)
+    elseif iszero(worst)
+        nothing
+    else
         worst_tickers = colnames(prices)
         q = f(worst, length(rms))
         println("Filter worst portfolios.")
-        for rm ∈ ProgressBar(rms)
+        for rm ∈ rms
             if !isempty(w1)
                 worst_tickers = worst_tickers[w1 .<= quantile(w1, one(q) - q)]
                 w1 = Float64[]
@@ -119,8 +101,23 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
     return unique!(all_tickers), unique!(best_tickers), unique!(worst_tickers)
 end
 
-function optimise_portfolios(prices, solvers, alloc_solvers, investment,
-                             oopt::OptimOpt = OptimOpt())
+@kwdef struct OptimOpt{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14}
+    rms::T1 = SD()
+    cov_type::T2 = PortCovCor()
+    cor_type::T3 = PortCovCor()
+    dist_type::T4 = DistCanonical()
+    hclust_alg::T5 = HAC()
+    hclust_opt::T6 = HCOpt()
+    short::T7 = false
+    short_budget::T8 = 0.2
+    short_u::T9 = 0.2
+    long_u::T10 = 1.0
+    rf::T11 = 3.5 / 100 / 252
+    obj::T12 = Sharpe(; rf = rf)
+    kelly::T13 = EKelly()
+    alloc_method::T14 = LP()
+end
+function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = OptimOpt())
     rms = oopt.rms
     cov_type = oopt.cov_type
     cor_type = oopt.cor_type
@@ -169,7 +166,7 @@ function optimise_portfolios(prices, solvers, alloc_solvers, investment,
     portfolios = Dict()
 
     println("Optimising portfolios.")
-    for rm ∈ ProgressBar(rms)
+    for rm ∈ rms
         trm = Symbol(rm)
         portfolios[trm] = Dict()
         title2 = "$title1 $trm"
@@ -240,48 +237,86 @@ function optimise_portfolios(prices, solvers, alloc_solvers, investment,
     return portfolios
 end
 
-function generate_portfolios(prices, solvers, alloc_solvers, gopt::GenOpt = GenOpt())
-    date0 = gopt.date0
-    date1 = gopt.date1
-    investment = gopt.investment .* gopt.conversion
-    if !isa(date0, AbstractVector)
-        date0 = [date0]
-    end
-    if !isa(date1, AbstractVector)
-        date1 = [date1]
-    end
-    if !isa(investment, AbstractVector)
-        investment = [investment]
-    end
-    portfolios_vec = []
-    println("Generating portfolios.")
-    for (date0_i, date1_i, investment_i) ∈ ProgressBar(zip(date0, date1, investment))
-        prices_i = TimeArray(filter(:timestamp => x -> DateTime(date0_i) <=
-                                                       x <=
-                                                       DateTime(date1_i), prices);
-                             timestamp = :timestamp)
-        tickers_i = filter_tickers(prices_i, solvers, gopt.fopt)[1]
-        portfolios = optimise_portfolios(prices_i[tickers_i], solvers, alloc_solvers,
-                                         investment_i, gopt.oopt)
-        push!(portfolios_vec, portfolios)
-    end
+@kwdef struct GenOpt{T1, T2, T3, T4, T5}
+    investment::T1 = 1e6
+    conversion::T2 = 1
+    dtopt::T3 = DateOpt()
+    fopt::T4 = FilterOpt()
+    oopt::T5 = OptimOpt()
+end
+function generate_portfolio(prices, solvers, alloc_solvers, gopt::GenOpt = GenOpt())
+    date0 = gopt.dtopt.date0
+    date1 = gopt.dtopt.date1
+    investment = gopt.investment * gopt.conversion
+    prices = TimeArray(filter(:timestamp => x -> DateTime(date0) <= x <= DateTime(date1),
+                              prices); timestamp = :timestamp)
+    tickers = filter_tickers(prices, solvers, gopt.fopt)[1]
+    portfolios = optimise(prices[tickers], solvers, alloc_solvers, investment, gopt.oopt)
 
-    return portfolios_vec
+    return portfolios
 end
 
-@kwdef struct GenMarketOpt{T1, T2, T3, T4}
+@kwdef struct PortOpt{T1, T2, T3, T4}
+    market::T1 = ""
+    lopt::T2 = LoadOpt()
+    gopts::T3 = GenOpt()
+    path::T4 = "./Data/Portfolios/"
+end
+function generate_market_portfolios(solvers, alloc_solvers, popt::PortOpt = PortOpt(),
+                                    mopt::MarketOpt = MarketOpt())
+    market = popt.market
+    lopt = popt.lopt
+    gopts = popt.gopts
+    path = joinpath(popt.path, market)
+
+    tickers = get_market_tickers(market, mopt)
+    if isempty(tickers)
+        return nothing
+    end
+
+    prices = join_ticker_prices(tickers, lopt)
+    if isempty(prices)
+        return nothing
+    end
+
+    mkpath(path)
+
+    println("Generating $market portfolios")
+    for gopt ∈ gopts
+        portfolios = generate_portfolio(prices, solvers, alloc_solvers, gopt)
+        if isempty(portfolios)
+            continue
+        end
+        filename = joinpath(path, "$(gopt.date0)-$(gopt.date1).jld2")
+        save(filename, "portfolios", portfolios)
+    end
+
+    return nothing
+end
+
+function generate_all_portfolios(solvers, alloc_solvers,
+                                 popts::Union{<:PortOpt, AbstractVector{<:PortOpt}} = PortOpt(),
+                                 mopt::MarketOpt = MarketOpt())
+    println("Generating portfolios")
+    for popt ∈ popts
+        generate_market_portfolios(solvers, alloc_solvers, popt, mopt)
+    end
+
+    return nothing
+end
+
+@kwdef struct GenMarketOpt{T1, T2, T3}
     market::T1 = Pair("", "")
-    mopt::T2 = MarketOpt()
+    lopt::T2 = LoadOpt()
     fopt::T3 = FilterOpt()
-    lopt::T4 = LoadOpt()
 end
-function generate_market(solvers, gompt::GenMarketOpt = GenMarketOpt())
-    market = gompt.market
-    new_market = market.first
-    source_markets = market.second
-    mopt = gompt.mopt
-    fopt = gompt.fopt
-    lopt = gompt.lopt
+function generate_market(solvers, gmkopt::GenMarketOpt = GenMarketOpt(),
+                         mopt::MarketOpt = MarketOpt())
+    new_market = gmkopt.market.first
+    source_markets = gmkopt.market.second
+    lopt = gmkopt.lopt
+    fopt = gmkopt.fopt
+    path = mopt.path
 
     tickers = get_all_market_tickers(source_markets, mopt)
     if isempty(tickers)
@@ -295,21 +330,34 @@ function generate_market(solvers, gompt::GenMarketOpt = GenMarketOpt())
 
     all_tickers, best_tickers, worst_tickers = filter_tickers(prices, solvers, fopt)
 
+    mkpath(path)
+    filename = joinpath(path, new_market)
+
     if !isempty(all_tickers)
-        CSV.write(new_market * "_all.csv", DataFrame(; Ticker = all_tickers))
+        CSV.write(filename * "_all.csv", DataFrame(; Ticker = all_tickers))
     else
         return nothing
     end
 
     if !isempty(best_tickers)
-        CSV.write(new_market * "_best.csv", DataFrame(; Ticker = best_tickers))
+        CSV.write(filename * "_best.csv", DataFrame(; Ticker = best_tickers))
     end
 
     if !isempty(worst_tickers)
-        CSV.write(new_market * "_worst.csv", DataFrame(; Ticker = worst_tickers))
+        CSV.write(filename * "_worst.csv", DataFrame(; Ticker = worst_tickers))
+    end
+
+    return nothing
+end
+function generate_markets(solvers,
+                          gmktopts::Union{<:GenMarketOpt, AbstractVector{<:GenMarketOpt}},
+                          mopt::MarketOpt = MarketOpt())
+    println("Generating markets.")
+    for gmktopt ∈ gmktopts
+        generate_market(solvers, gmktopt, mopt)
     end
 
     return nothing
 end
 
-export FilterOpt, OptimOpt, GenOpt, filter_tickers
+export FilterOpt, OptimOpt, GenOpt, PortOpt, GenMarketOpt, filter_tickers

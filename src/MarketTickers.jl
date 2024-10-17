@@ -1,7 +1,11 @@
-@kwdef struct MarketOpt{T1, T2}
-    path::T1 = "./Data/Markets/"
-    comment::T1 = "#"
-    select::T2 = [r"(?i)(sicker|symbol)"]
+struct MarketOpt{T1, T2, T3}
+    path::T1
+    comment::T2
+    select::T3
+end
+function MarketOpt(; path::AbstractString = "./Data/Markets/",
+                   comment::AbstractString = "#", select = [:Ticker])
+    return MarketOpt{typeof(path), typeof(comment), typeof(select)}(path, comment, select)
 end
 function get_market_tickers(market, mopt::MarketOpt = MarketOpt())
     path = mopt.path
@@ -21,11 +25,10 @@ function get_all_market_tickers(markets, mopt::MarketOpt = MarketOpt())
     end
     tickers = String[]
     println("Getting market tickers.")
-    for market ∈ ProgressBar(markets)
+    for market ∈ markets
         append!(tickers, get_market_tickers(market, mopt))
     end
 
     return unique!(tickers)
 end
-
 export MarketOpt, get_market_tickers
