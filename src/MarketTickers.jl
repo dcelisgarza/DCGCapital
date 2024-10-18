@@ -24,9 +24,10 @@ function get_all_market_tickers(markets, mopt::MarketOpt = MarketOpt())
         markets = [markets]
     end
     tickers = String[]
-    println("Getting market tickers.")
-    for market ∈ markets
+    iter = ProgressBar(markets)
+    for market ∈ iter
         append!(tickers, get_market_tickers(market, mopt))
+        set_description(iter, "Getting market tickers:")
     end
 
     return unique!(tickers)

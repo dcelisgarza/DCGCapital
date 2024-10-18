@@ -1,12 +1,12 @@
 module DCGCapital
-using DataFrames, YFinance, TimeSeries, JSON3, FileIO, JLD2, StatsPlots, GraphRecipes,
-      ArgParse, CSV, Dates, ProgressBars, SmartAsserts, Statistics, PortfolioOptimiser,
-      Random
+using DataFrames, YFinance, TimeSeries, FileIO, JLD2, StatsPlots, GraphRecipes, ArgParse,
+      CSV, Dates, ProgressBars, SmartAsserts, Statistics, PortfolioOptimiser, Random
 
 include("./MarketTickers.jl")
 include("./Download.jl")
 include("./LoadTickers.jl")
-include("./PortfolioGeneration.jl")
+include("./OptimisePortfolios.jl")
+include("./ProcessPortfolios.jl")
 
 for op ∈ (MarketOpt, DateOpt, DownloadOpt, LoadOpt, FilterOpt, OptimOpt, GenOpt, PortOpt,
           GenMarketOpt)

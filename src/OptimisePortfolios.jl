@@ -41,8 +41,8 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
     else
         best_tickers = colnames(prices)
         q = f(best, length(rms))
-        println("Filter best portfolios.")
-        for rm ∈ rms
+        iter = ProgressBar(rms)
+        for rm ∈ iter
             kurt_idx, skurt_idx, set_skew, set_sskew = PortfolioOptimiser.find_cov_kurt_skew_rm(rms)[2:end]
             portfolio = HCPortfolio(; prices = prices[best_tickers], solvers = solvers)
             asset_statistics!(portfolio; cov_type = cov_type, cor_type = cor_type,
@@ -62,6 +62,7 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
             end
 
             best_tickers = best_tickers[w .>= quantile(w, q)]
+            set_description(iter, "Filter best portfolios:")
         end
         append!(all_tickers, best_tickers)
     end
@@ -73,11 +74,12 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
     else
         worst_tickers = colnames(prices)
         q = f(worst, length(rms))
-        println("Filter worst portfolios.")
-        for rm ∈ rms
+        iter = ProgressBar(rms)
+        for rm ∈ iter
             if !isempty(w1)
                 worst_tickers = worst_tickers[w1 .<= quantile(w1, one(q) - q)]
                 w1 = Float64[]
+                set_description(iter, "Filter worst portfolios:")
                 continue
             end
             kurt_idx, skurt_idx, set_skew, set_sskew = PortfolioOptimiser.find_cov_kurt_skew_rm(rms)[2:end]
@@ -94,6 +96,7 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
             end
 
             worst_tickers = worst_tickers[w .<= quantile(w, one(q) - q)]
+            set_description(iter, "Filter worst portfolios:")
         end
         append!(all_tickers, worst_tickers)
     end
@@ -166,8 +169,8 @@ function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = O
 
     portfolios = Dict()
 
-    println("Optimising portfolios.")
-    for rm ∈ rms
+    iter = ProgressBar(rms)
+    for rm ∈ iter
         trm = PortfolioOptimiser.get_rm_symbol(rm)
         portfolios[trm] = Dict()
         title2 = "$title1 $trm"
@@ -233,6 +236,8 @@ function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = O
             portfolios[trm][:h][:h] = hcport_hist
             portfolios[trm][:h][:c] = hcport_clst
         end
+
+        set_description(iter, "Optimising portfolios:")
     end
 
     return portfolios
@@ -270,22 +275,24 @@ function generate_market_portfolios(solvers, alloc_solvers, popt::PortOpt = Port
     market = popt.market
     lopt = popt.lopt
     gopts = popt.gopts
-    path = joinpath(popt.path, market)
+    path = popt.path
+    mkpath(path)
 
     tickers = get_market_tickers(market, mopt)
     if isempty(tickers)
         return nothing
     end
 
+    path = joinpath(path, market)
+    mkpath(path)
+
     prices = join_ticker_prices(tickers, lopt)
     if isempty(prices)
         return nothing
     end
 
-    mkpath(path)
-
-    println("Generating $market portfolios")
-    for gopt ∈ gopts
+    iter = ProgressBar(gopts)
+    for gopt ∈ iter
         portfolios = generate_portfolio(prices, solvers, alloc_solvers, gopt, "$market ")
         if isempty(portfolios)
             continue
@@ -293,6 +300,7 @@ function generate_market_portfolios(solvers, alloc_solvers, popt::PortOpt = Port
         filename = joinpath(path,
                             "$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
         save(filename, "portfolios", portfolios)
+        set_description(iter, "Generating $market portfolios:")
     end
 
     return nothing
@@ -301,9 +309,10 @@ end
 function generate_all_portfolios(solvers, alloc_solvers,
                                  popts::Union{<:PortOpt, AbstractVector{<:PortOpt}} = PortOpt(),
                                  mopt::MarketOpt = MarketOpt())
-    println("Generating portfolios")
-    for popt ∈ popts
+    iter = ProgressBar(popts)
+    for popt ∈ iter
         generate_market_portfolios(solvers, alloc_solvers, popt, mopt)
+        set_description(iter, "Generating portfolios:")
     end
 
     return nothing
@@ -338,17 +347,29 @@ function generate_market(solvers, gmkopt::GenMarketOpt = GenMarketOpt(),
     filename = joinpath(path, new_market)
 
     if !isempty(all_tickers)
-        CSV.write(filename * "_all.csv", DataFrame(; Ticker = all_tickers))
+        try
+            CSV.write(filename * "_all.csv", DataFrame(; Ticker = all_tickers))
+        catch err
+            println("error writing to csv: $err")
+        end
     else
         return nothing
     end
 
     if !isempty(best_tickers)
-        CSV.write(filename * "_best.csv", DataFrame(; Ticker = best_tickers))
+        try
+            CSV.write(filename * "_best.csv", DataFrame(; Ticker = best_tickers))
+        catch err
+            println("error writing to csv: $err")
+        end
     end
 
     if !isempty(worst_tickers)
-        CSV.write(filename * "_worst.csv", DataFrame(; Ticker = worst_tickers))
+        try
+            CSV.write(filename * "_worst.csv", DataFrame(; Ticker = worst_tickers))
+        catch err
+            println("error writing to csv: $err")
+        end
     end
 
     return nothing
@@ -356,9 +377,10 @@ end
 function generate_markets(solvers,
                           gmktopts::Union{<:GenMarketOpt, AbstractVector{<:GenMarketOpt}},
                           mopt::MarketOpt = MarketOpt())
-    println("Generating markets.")
-    for gmktopt ∈ gmktopts
+    iter = ProgressBar(gmktopts)
+    for gmktopt ∈ iter
         generate_market(solvers, gmktopt, mopt)
+        set_description(iter, "Generating markets:")
     end
 
     return nothing

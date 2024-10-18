@@ -26,9 +26,9 @@ function load_ticker_prices(ticker, lopt::LoadOpt = LoadOpt())
 end
 function join_ticker_prices(tickers, lopt::LoadOpt = LoadOpt())
     select = lopt.select
-    println("Generating master prices dataframe.")
     prices = DataFrame(; timestamp = DateTime[])
-    for ticker ∈ tickers
+    iter = ProgressBar(tickers)
+    for ticker ∈ iter
         ticker_prices = load_ticker_prices(ticker, lopt)
         if isempty(ticker_prices)
             continue
@@ -36,6 +36,7 @@ function join_ticker_prices(tickers, lopt::LoadOpt = LoadOpt())
         DataFrames.rename!(ticker_prices,
                            setdiff(select, (:timestamp,))[1] => Symbol(ticker))
         prices = outerjoin(prices, ticker_prices; on = :timestamp)
+        set_description(iter, "Generating master prices dataframe:")
     end
 
     f(x) =

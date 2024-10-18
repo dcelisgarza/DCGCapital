@@ -22,9 +22,12 @@ popts = [PortOpt(; market = "TestMarket",
                  lopt = LoadOpt(;
                                 dtopt = DateOpt(; date0 = "2023-04-07",
                                                 date1 = "2023-07-03")),
-                 gopts = GenOpt(; oopt = OptimOpt(; rms = [SD(), CVaR()]),
-                                dtopt = DateOpt(; date0 = "2023-04-29",
-                                                date1 = "2023-06-23"))),
+                 gopts = [GenOpt(; oopt = OptimOpt(; rms = [SD(), CVaR()]),
+                                 dtopt = DateOpt(; date0 = "2023-04-29",
+                                                 date1 = "2023-06-23")),
+                          GenOpt(; oopt = OptimOpt(; rms = EDaR()),
+                                 dtopt = DateOpt(; date0 = "2023-04-05",
+                                                 date1 = "2023-06-23"))]),
          PortOpt(; market = "TestMarketBW_all",
                  lopt = LoadOpt(;
                                 dtopt = DateOpt(; date0 = "2023-04-07",
@@ -33,11 +36,11 @@ popts = [PortOpt(; market = "TestMarket",
                                 dtopt = DateOpt(; date0 = "2023-04-29",
                                                 date1 = "2023-06-23")))]
 
-main(; solvers = solvers, alloc_solvers = alloc_solvers, download = false, generate = true,
-     optimise = true, markets = "TestMarket", mopt = MarketOpt(), dopt = dopt,
-     gmkopts = gmktopts, popts = popts)
+main(; solvers = solvers, alloc_solvers = alloc_solvers, download = true, generate = true,
+     optimise = true, process = true, markets = ["TestMarket", "TestMarketBW_all"],
+     mopt = MarketOpt(), dopt = dopt, gmkopts = gmktopts, popts = popts)
 
-ports = load("D:\\Daniel Celis Garza\\dev\\DCGCapital\\Data\\Portfolios\\TestMarket\\2023-04-29_2023-06-23.jld2",
+ports = load("D:\\Daniel Celis Garza\\dev\\DCGCapital\\Data\\Portfolios\\TestMarketBW_all\\2023-04-29_2023-06-23.jld2",
              "portfolios")
 
 portfolio_vec = main(tickers, solvers, alloc_solvers,

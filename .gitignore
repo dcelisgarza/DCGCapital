@@ -4,4 +4,6 @@
 /docs/Manifest.toml
 /docs/build/
 .CondaPkg
-/Data
+/Data/Markets/*
+/Data/Portfolios/*
+/Data/Tickers/*
