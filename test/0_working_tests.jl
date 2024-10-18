@@ -35,10 +35,10 @@ popts = [PortOpt(; market = "TestMarket",
                  gopts = GenOpt(;
                                 dtopt = DateOpt(; date0 = "2023-04-29",
                                                 date1 = "2023-06-23")))]
-
+fopt = FilterOpt()
 main(; solvers = solvers, alloc_solvers = alloc_solvers, download = true, generate = true,
-     optimise = true, process = true, markets = ["TestMarket", "TestMarketBW_all"],
-     mopt = MarketOpt(), dopt = dopt, gmkopts = gmktopts, popts = popts)
+     optimise = true, process = true, markets = "TestMarket", mopt = MarketOpt(),
+     dopt = dopt, gmkopts = gmktopts, popts = popts)
 
 ports = load("D:\\Daniel Celis Garza\\dev\\DCGCapital\\Data\\Portfolios\\TestMarketBW_all\\2023-04-29_2023-06-23.jld2",
              "portfolios")

@@ -1,6 +1,7 @@
 function process_portfolios(process_path = "./Data/Portfolios/", popt::PortOpt = PortOpt(),
                             mopt::MarketOpt = MarketOpt())
     market = popt.market
+    name = popt.name
     gopts = popt.gopts
     path = popt.path
     mkpath(path)
@@ -16,7 +17,7 @@ function process_portfolios(process_path = "./Data/Portfolios/", popt::PortOpt =
     iter = ProgressBar(gopts)
     for gopt ∈ iter
         filename = joinpath(path,
-                            "$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
+                            "$(name)_$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
         if !isfile(filename)
             set_description(iter, "Processing $market portfolios:")
             continue
@@ -28,18 +29,12 @@ function process_portfolios(process_path = "./Data/Portfolios/", popt::PortOpt =
                 v2[:w].weights = replace(v2[:w].weights, 0.0 => missing, -0.0 => missing)
                 dropmissing!(v2[:w])
 
-                name = market *
-                       " $(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)) $k1 $k2"
-                println(name)
-                # append!(v2[:w],
-                #         DataFrame(; tickers = ["$k1 $k2 $market"], shares = Int[0],
-                #                   price = Float64[v2[:sr]], cost = Float64[0],
-                #                   weights = Float64[0]))
-
-                # CSV.write(filename,
-                #           DataFrame(; tickers = String[], shares = Int[], price = Float64[],
-                #                     cost = Float64[], weights = Float64[]); append = true)
-
+                tmp_name = "$(market)_$(name)$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1))_$(k1)_$(k2)"
+                append!(v2[:w],
+                        DataFrame(; tickers = [tmp_name], shares = Int[0],
+                                  price = Float64[v2[:sr]], cost = Float64[0],
+                                  weights = Float64[0]))
+                CSV.write(joinpath(process_path, "portfolios.csv"), v2[:w]; append = true)
                 display(v2[:h])
                 display(v2[:dd])
                 if haskey(v2, :c)

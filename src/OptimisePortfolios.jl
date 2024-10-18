@@ -264,15 +264,17 @@ function generate_portfolio(prices, solvers, alloc_solvers, gopt::GenOpt = GenOp
     return portfolios
 end
 
-@kwdef struct PortOpt{T1, T2, T3, T4}
+@kwdef struct PortOpt{T1, T2, T3, T4, T5}
     market::T1 = ""
-    lopt::T2 = LoadOpt()
-    gopts::T3 = GenOpt()
-    path::T4 = "./Data/Portfolios/"
+    name::T2 = ""
+    lopt::T3 = LoadOpt()
+    gopts::T4 = GenOpt()
+    path::T5 = "./Data/Portfolios/"
 end
 function generate_market_portfolios(solvers, alloc_solvers, popt::PortOpt = PortOpt(),
                                     mopt::MarketOpt = MarketOpt())
     market = popt.market
+    name = popt.name
     lopt = popt.lopt
     gopts = popt.gopts
     path = popt.path
@@ -298,7 +300,7 @@ function generate_market_portfolios(solvers, alloc_solvers, popt::PortOpt = Port
             continue
         end
         filename = joinpath(path,
-                            "$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
+                            "$(name)_$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
         save(filename, "portfolios", portfolios)
         set_description(iter, "Generating $market portfolios:")
     end
