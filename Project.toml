@@ -21,9 +21,6 @@ TimeSeries = "9e3dc215-6440-5c97-bce1-76c03772f85e"
 YFinance = "e4b3b0a2-f9a3-42f3-aabb-32142cceaf77"
 
 [compat]
-PortfolioOptimiser = "0.1.0"
-Random = "1.11.0"
-Statistics = "1.11.1"
 julia = "1.11"
 
 [extras]
