@@ -1,4 +1,4 @@
-using DCGCapital, Clarabel, HiGHS
+using DCGCapital, Clarabel, HiGHS, PortfolioOptimiser, JLD2, FileIO
 
 solvers = Dict(:Clarabel => Dict(:solver => Clarabel.Optimizer,
                                  :check_sol => (allow_local = true, allow_almost = true),
@@ -18,10 +18,27 @@ gmktopts = [GenMarketOpt(; market = Pair("TestMarketBW", "TestMarket"),
                          lopt = LoadOpt(;
                                         dtopt = DateOpt(; date0 = "2023-04-07",
                                                         date1 = "2023-07-03")))]
+popts = [PortOpt(; market = "TestMarket",
+                 lopt = LoadOpt(;
+                                dtopt = DateOpt(; date0 = "2023-04-07",
+                                                date1 = "2023-07-03")),
+                 gopts = GenOpt(; oopt = OptimOpt(; rms = [SD(), CVaR()]),
+                                dtopt = DateOpt(; date0 = "2023-04-29",
+                                                date1 = "2023-06-23"))),
+         PortOpt(; market = "TestMarketBW_all",
+                 lopt = LoadOpt(;
+                                dtopt = DateOpt(; date0 = "2023-04-07",
+                                                date1 = "2023-07-03")),
+                 gopts = GenOpt(;
+                                dtopt = DateOpt(; date0 = "2023-04-29",
+                                                date1 = "2023-06-23")))]
 
 main(; solvers = solvers, alloc_solvers = alloc_solvers, download = false, generate = true,
-     optimise = false, markets = "TestMarket", mopt = MarketOpt(), dopt = dopt,
-     gmkopts = gmktopts, popts = PortOpt())
+     optimise = true, markets = "TestMarket", mopt = MarketOpt(), dopt = dopt,
+     gmkopts = gmktopts, popts = popts)
+
+ports = load("D:\\Daniel Celis Garza\\dev\\DCGCapital\\Data\\Portfolios\\TestMarket\\2023-04-29_2023-06-23.jld2",
+             "portfolios")
 
 portfolio_vec = main(tickers, solvers, alloc_solvers,
                      DownloadOpt(; date0 = "2023-04-25", date1 = "2023-06-30"),

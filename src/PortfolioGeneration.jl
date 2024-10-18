@@ -117,7 +117,8 @@ end
     kelly::T13 = EKelly()
     alloc_method::T14 = LP()
 end
-function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = OptimOpt())
+function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = OptimOpt(),
+                  market = "")
     rms = oopt.rms
     cov_type = oopt.cov_type
     cor_type = oopt.cor_type
@@ -161,13 +162,13 @@ function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = O
     date0 = timestamp(prices)[1]
     date1 = timestamp(prices)[end]
 
-    title1 = "$(Date(date0))-$(Date(date1))"
+    title1 = "$(market)$(Date(date0))_$(Date(date1))"
 
     portfolios = Dict()
 
     println("Optimising portfolios.")
     for rm ∈ rms
-        trm = Symbol(rm)
+        trm = PortfolioOptimiser.get_rm_symbol(rm)
         portfolios[trm] = Dict()
         title2 = "$title1 $trm"
 
@@ -244,14 +245,16 @@ end
     fopt::T4 = FilterOpt()
     oopt::T5 = OptimOpt()
 end
-function generate_portfolio(prices, solvers, alloc_solvers, gopt::GenOpt = GenOpt())
+function generate_portfolio(prices, solvers, alloc_solvers, gopt::GenOpt = GenOpt(),
+                            market = "")
     date0 = gopt.dtopt.date0
     date1 = gopt.dtopt.date1
     investment = gopt.investment * gopt.conversion
     prices = TimeArray(filter(:timestamp => x -> DateTime(date0) <= x <= DateTime(date1),
                               prices); timestamp = :timestamp)
     tickers = filter_tickers(prices, solvers, gopt.fopt)[1]
-    portfolios = optimise(prices[tickers], solvers, alloc_solvers, investment, gopt.oopt)
+    portfolios = optimise(prices[tickers], solvers, alloc_solvers, investment, gopt.oopt,
+                          market)
 
     return portfolios
 end
@@ -283,11 +286,12 @@ function generate_market_portfolios(solvers, alloc_solvers, popt::PortOpt = Port
 
     println("Generating $market portfolios")
     for gopt ∈ gopts
-        portfolios = generate_portfolio(prices, solvers, alloc_solvers, gopt)
+        portfolios = generate_portfolio(prices, solvers, alloc_solvers, gopt, "$market ")
         if isempty(portfolios)
             continue
         end
-        filename = joinpath(path, "$(gopt.date0)-$(gopt.date1).jld2")
+        filename = joinpath(path,
+                            "$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
         save(filename, "portfolios", portfolios)
     end
 
