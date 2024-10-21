@@ -28,11 +28,10 @@ function process_portfolios(process_path = "./Data/Portfolios/", popt::PortOpt =
                 sort!(v2[:w], :weights; rev = true)
                 v2[:w].weights = replace(v2[:w].weights, 0.0 => missing, -0.0 => missing)
                 dropmissing!(v2[:w])
-
                 tmp_name = "$(market)_$(name)$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1))_$(k1)_$(k2)"
                 append!(v2[:w],
                         DataFrame(; tickers = [tmp_name], shares = Int[0],
-                                  price = Float64[v2[:sr]], cost = Float64[0],
+                                  price = Float64[v2[:sr]], cost = sum(v2[:w].cost),
                                   weights = Float64[0]))
                 CSV.write(joinpath(process_path, "portfolios.csv"), v2[:w]; append = true)
                 display(v2[:h])

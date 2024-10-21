@@ -1,12 +1,14 @@
 module DCGCapital
 using DataFrames, YFinance, TimeSeries, FileIO, JLD2, StatsPlots, GraphRecipes, ArgParse,
-      CSV, Dates, ProgressBars, SmartAsserts, Statistics, PortfolioOptimiser, Random
+      CSV, Dates, ProgressBars, SmartAsserts, Statistics, StatsBase, PortfolioOptimiser,
+      Random
 
 include("./MarketTickers.jl")
 include("./Download.jl")
 include("./LoadTickers.jl")
 include("./OptimisePortfolios.jl")
 include("./ProcessPortfolios.jl")
+include("./Main.jl")
 
 for op ∈ (MarketOpt, DateOpt, DownloadOpt, LoadOpt, FilterOpt, OptimOpt, GenOpt, PortOpt,
           GenMarketOpt)
@@ -23,6 +25,12 @@ for op ∈ (MarketOpt, DateOpt, DownloadOpt, LoadOpt, FilterOpt, OptimOpt, GenOp
              end
          end)
 end
-include("./Main.jl")
+
+# Curated stock lists.
+# https://www.suredividend.com/members-excel-sheet-downloads/
+# https://www.suredividend.com/archives/
+
+# Nasdaq stock screener.
+# https://www.nasdaq.com/market-activity/stocks/screener
 
 end

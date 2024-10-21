@@ -25,10 +25,12 @@ function load_ticker_prices(ticker, lopt::LoadOpt = LoadOpt())
     return prices
 end
 function join_ticker_prices(tickers, lopt::LoadOpt = LoadOpt())
+    path = lopt.path
     select = lopt.select
+    tickers = intersect(tickers, replace.(readdir(path), ".csv" => ""))
     prices = DataFrame(; timestamp = DateTime[])
-    iter = ProgressBar(tickers)
-    for ticker ∈ iter
+    jtp_iter = ProgressBar(tickers)
+    for ticker ∈ jtp_iter
         ticker_prices = load_ticker_prices(ticker, lopt)
         if isempty(ticker_prices)
             continue
@@ -36,7 +38,8 @@ function join_ticker_prices(tickers, lopt::LoadOpt = LoadOpt())
         DataFrames.rename!(ticker_prices,
                            setdiff(select, (:timestamp,))[1] => Symbol(ticker))
         prices = outerjoin(prices, ticker_prices; on = :timestamp)
-        set_description(iter, "Generating master prices dataframe:")
+
+        set_description(jtp_iter, "Generating master prices dataframe:")
     end
 
     f(x) =
@@ -48,6 +51,14 @@ function join_ticker_prices(tickers, lopt::LoadOpt = LoadOpt())
 
     transform!(prices, setdiff(names(prices), ("timestamp",)) .=> ByRow((x) -> f(x));
                renamecols = false)
+
+    missings = Int[]
+    sizehint!(missings, ncol(prices))
+    for col ∈ eachcol(prices)
+        push!(missings, count(ismissing.(col)))
+    end
+
+    prices = prices[!, missings .== StatsBase.mode(missings)]
 
     return dropmissing!(prices)
 end

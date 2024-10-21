@@ -78,10 +78,10 @@ function update_download_tickers(markets::Union{<:AbstractString, AbstractVector
                                  mopt::MarketOpt = MarketOpt(),
                                  dopt::DownloadOpt = DownloadOpt())
     tickers = shuffle!(get_all_market_tickers(markets, mopt))
-    iter = ProgressBar(tickers)
-    for ticker ∈ iter
-        set_description(iter, "Downloading and updating data:")
+    udts_iter = ProgressBar(tickers)
+    for ticker ∈ udts_iter
         update_download_ticker(ticker, dopt)
+        set_description(udts_iter, "Downloading and updating data:")
     end
     return nothing
 end

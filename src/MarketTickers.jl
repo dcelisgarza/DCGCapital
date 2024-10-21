@@ -24,12 +24,19 @@ function get_all_market_tickers(markets, mopt::MarketOpt = MarketOpt())
         markets = [markets]
     end
     tickers = String[]
-    iter = ProgressBar(markets)
-    for market ∈ iter
+    gamt_iter = ProgressBar(markets)
+    for market ∈ gamt_iter
         append!(tickers, get_market_tickers(market, mopt))
-        set_description(iter, "Getting market tickers:")
+        set_description(gamt_iter, "Getting market tickers:")
     end
 
     return unique!(tickers)
 end
-export MarketOpt, get_market_tickers
+function rename_market_names(path = "./Data/Markets",
+                             replace::Pair{<:AbstractString, <:AbstractString}...)
+    files = readdir(path; join = true)
+    mv.(files, replace.(files, replace...))
+
+    return nothing
+end
+export MarketOpt, get_market_tickers, rename_market_names
