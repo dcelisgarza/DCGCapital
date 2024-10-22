@@ -14,12 +14,12 @@ function process_portfolios(process_path = "./Data/Portfolios/", popt::PortOpt =
     path = joinpath(path, market)
     mkpath(path)
 
-    iter = ProgressBar(gopts)
-    for gopt ∈ iter
+    gopts_iter = ProgressBar(gopts)
+    for gopt ∈ gopts_iter
+        set_description(gopts_iter, "Processing $market portfolios:")
         filename = joinpath(path,
-                            "$(name)_$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
+                            "$(isempty(name) ? name : name*"_")$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
         if !isfile(filename)
-            set_description(iter, "Processing $market portfolios:")
             continue
         end
         portfolios = load(filename, "portfolios")
@@ -41,7 +41,6 @@ function process_portfolios(process_path = "./Data/Portfolios/", popt::PortOpt =
                 end
             end
         end
-        set_description(iter, "Processing $market portfolios:")
     end
 
     return nothing
@@ -55,10 +54,10 @@ function process_all_portfolios(path = "./Data/Portfolios/",
     CSV.write(filename,
               DataFrame(; tickers = String[], shares = Int[], price = Float64[],
                         cost = Float64[], weights = Float64[]))
-    iter = ProgressBar(popts)
-    for popt ∈ iter
+    popts_iter = ProgressBar(popts)
+    for popt ∈ popts_iter
+        set_description(popts_iter, "Processing portfolios:")
         process_portfolios(path, popt, mopt)
-        set_description(iter, "Processing portfolios:")
     end
 
     return nothing

@@ -6,7 +6,7 @@ function (@main)(; solvers = Dict(), alloc_solvers = Dict(),
                  dopt::DownloadOpt = DownloadOpt(),
                  # generate
                  generate = true,
-                 gmkopts::Union{<:GenMarketOpt, AbstractVector{<:GenMarketOpt}} = GenMarketOpt(),
+                 gmktopts::Union{<:GenMarketOpt, AbstractVector{<:GenMarketOpt}} = GenMarketOpt(),
                  # optimise
                  optimise = true,
                  # process
@@ -20,7 +20,7 @@ function (@main)(; solvers = Dict(), alloc_solvers = Dict(),
     end
 
     if generate
-        generate_markets(solvers, gmkopts, mopt)
+        generate_markets(solvers, gmktopts, mopt)
     end
 
     if optimise

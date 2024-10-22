@@ -26,8 +26,8 @@ function get_all_market_tickers(markets, mopt::MarketOpt = MarketOpt())
     tickers = String[]
     gamt_iter = ProgressBar(markets)
     for market ∈ gamt_iter
-        append!(tickers, get_market_tickers(market, mopt))
         set_description(gamt_iter, "Getting market tickers:")
+        append!(tickers, get_market_tickers(market, mopt))
     end
 
     return unique!(tickers)
