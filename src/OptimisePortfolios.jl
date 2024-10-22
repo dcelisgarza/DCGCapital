@@ -106,7 +106,7 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
     return unique!(all_tickers), unique!(best_tickers), unique!(worst_tickers)
 end
 
-@kwdef struct OptimOpt{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14}
+@kwdef struct OptimOpt{T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15}
     rms::T1 = SD()
     cov_type::T2 = PortCovCor()
     cor_type::T3 = PortCovCor()
@@ -114,13 +114,14 @@ end
     hclust_alg::T5 = HAC()
     hclust_opt::T6 = HCOpt()
     short::T7 = false
-    short_budget::T8 = 0.2
-    short_u::T9 = 0.2
+    budget::T8 = 1.0
+    short_budget::T9 = 0.2
     long_u::T10 = 1.0
-    rf::T11 = 3.5 / 100 / 252
-    obj::T12 = Sharpe(; rf = rf)
-    kelly::T13 = EKelly()
-    alloc_method::T14 = LP()
+    short_u::T11 = 0.2
+    rf::T12 = 3.5 / 100 / 252
+    obj::T13 = Sharpe(; rf = rf)
+    kelly::T14 = EKelly()
+    alloc_method::T15 = LP()
 end
 function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = OptimOpt(),
                   market = "")
@@ -131,9 +132,10 @@ function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = O
     hclust_alg = oopt.hclust_alg
     hclust_opt = oopt.hclust_opt
     short = oopt.short
+    budget = oopt.budget
     short_budget = oopt.short_budget
-    short_u = oopt.short_u
     long_u = oopt.long_u
+    short_u = oopt.short_u
     obj = oopt.obj
     rf = oopt.rf
     kelly = oopt.kelly
@@ -142,15 +144,15 @@ function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = O
     kurt_idx, skurt_idx, set_skew, set_sskew = PortfolioOptimiser.find_cov_kurt_skew_rm(rms)[2:end]
 
     portfolio = Portfolio(; prices = prices, solvers = solvers,
-                          alloc_solvers = alloc_solvers, short = short,
-                          short_budget = short_budget, short_u = short_u, long_u = long_u)
+                          alloc_solvers = alloc_solvers, short = short, budget = budget,
+                          short_budget = short_budget, long_u = long_u, short_u = short_u)
 
     hctype = NCO(; opt_kwargs = (obj = obj, kelly = kelly),
-                 port_kwargs = (short = short, short_budget = short_budget,
-                                short_u = short_u, long_u = long_u))
+                 port_kwargs = (short = short, budtet = budget, short_budget = short_budget,
+                                long_u = long_u, short_u = short_u))
     hcportfolio = HCPortfolio(; prices = prices, solvers = solvers,
-                              alloc_solvers = alloc_solvers,
-                              w_min = -min(short_u, short_budget), w_max = long_u)
+                              alloc_solvers = alloc_solvers, w_min = -short_u,
+                              w_max = long_u)
 
     asset_statistics!(hcportfolio; cov_type = cov_type, cor_type = cor_type,
                       dist_type = dist_type, set_kurt = !isempty(kurt_idx),
@@ -298,12 +300,13 @@ function generate_market_portfolios(solvers, alloc_solvers, popt::PortOpt = Port
 
     gmp_iter = ProgressBar(gopts)
     for gopt ∈ gmp_iter
-        portfolios = generate_portfolio(prices, solvers, alloc_solvers, gopt, "$market ")
+        portfolios = generate_portfolio(prices, solvers, alloc_solvers, gopt,
+                                        "$market $name ")
         if isempty(portfolios)
             continue
         end
         filename = joinpath(path,
-                            "$(name)_$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
+                            "$(isempty(name) ? name : name*"_")$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
         save(filename, "portfolios", portfolios)
         set_description(gmp_iter, "Generating $market portfolios:")
     end
