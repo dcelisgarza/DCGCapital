@@ -21,6 +21,12 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
     @smart_assert(zero(best) <= best <= one(best))
     @smart_assert(zero(worst) <= worst <= one(worst))
 
+    if iszero(best) && iszero(worst)
+        all_tickers = colnames(prices)
+        return all_tickers, Vector{eltype(colnames(prices))}(undef, 0),
+               Vector{eltype(colnames(prices))}(undef, 0)
+    end
+
     if isa(prices, DataFrame)
         prices = TimeArray(prices; timestamp = :timestamp)
     end
@@ -245,12 +251,13 @@ function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = O
     return portfolios
 end
 
-@kwdef struct GenOpt{T1, T2, T3, T4, T5}
-    investment::T1 = 1e6
-    conversion::T2 = 1
-    dtopt::T3 = DateOpt()
-    fopt::T4 = FilterOpt()
-    oopt::T5 = OptimOpt()
+@kwdef struct GenOpt{T1, T2, T3, T4, T5, T6}
+    name::T1 = ""
+    investment::T2 = 1e6
+    conversion::T3 = 1
+    dtopt::T4 = DateOpt()
+    fopt::T5 = FilterOpt()
+    oopt::T6 = OptimOpt()
 end
 function generate_portfolio(prices, solvers, alloc_solvers, gopt::GenOpt = GenOpt(),
                             name = "")
@@ -298,13 +305,19 @@ function generate_market_portfolios(solvers, alloc_solvers, popt::PortOpt = Port
     gmp_iter = ProgressBar(gopts)
     for gopt ∈ gmp_iter
         set_description(gmp_iter, "Generating $market portfolios:")
+        _name = gopt.name
         portfolios = generate_portfolio(prices, solvers, alloc_solvers, gopt,
-                                        "$market $name ")
+                                        "$(market)$(isempty(name) ? name : " "*name)$(isempty(_name) ? _name : " "*_name) ")
         if isempty(portfolios)
             continue
         end
+        tmp_name = if isempty(name)
+            _name
+        else
+            "$(name)$(isempty(_name) ? _name : "_"*_name)"
+        end
         filename = joinpath(path,
-                            "$(isempty(name) ? name : name*"_")$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
+                            "$(isempty(tmp_name) ? tmp_name : tmp_name*"_")$(Date(gopt.dtopt.date0))_$(Date(gopt.dtopt.date1)).jld2")
         save(filename, "portfolios", portfolios)
     end
 

@@ -10,7 +10,7 @@ function (@main)(; solvers = Dict(), alloc_solvers = Dict(),
                  # optimise
                  optimise = true,
                  # process
-                 process = true, path = "./Data/Portfolios/",
+                 process = true, path = "./Data/Portfolios/", name = "portfolios",
                  # optimise, process
                  popts::Union{<:PortOpt, AbstractVector{<:PortOpt}} = PortOpt(),
                  # download, generate, optimise, process
@@ -28,7 +28,7 @@ function (@main)(; solvers = Dict(), alloc_solvers = Dict(),
     end
 
     if process
-        process_all_portfolios(path, popts, mopt)
+        process_all_portfolios(path, name, popts, mopt)
     end
 
     return nothing
