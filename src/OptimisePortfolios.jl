@@ -1,10 +1,10 @@
 @kwdef struct FilterOpt{T1, T2, T3, T4, T5, T6, T7, T8}
-    rms::T1 = SD()
+    rms::T1 = Variance()
     cov_type::T2 = PortCovCor()
     cor_type::T3 = PortCovCor()
     dist_type::T4 = DistCanonical()
-    hclust_alg::T5 = HAC()
-    hclust_opt::T6 = HCOpt()
+    clust_alg::T5 = HAC()
+    clust_opt::T6 = ClustOpt()
     best::T7 = 0.2
     worst::T8 = 0.2
 end
@@ -13,8 +13,8 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
     cov_type = fopt.cov_type
     cor_type = fopt.cor_type
     dist_type = fopt.dist_type
-    hclust_alg = fopt.hclust_alg
-    hclust_opt = fopt.hclust_opt
+    clust_alg = fopt.clust_alg
+    clust_opt = fopt.clust_opt
     best = fopt.best
     worst = fopt.worst
 
@@ -50,15 +50,17 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
         fbt_iter = ProgressBar(rms)
         for rm ∈ fbt_iter
             set_description(fbt_iter, "Filter best portfolios:")
-            kurt_idx, skurt_idx, set_skew, set_sskew = PortfolioOptimiser.find_cov_kurt_skew_rm(rms)[2:end]
-            portfolio = HCPortfolio(; prices = prices[best_tickers], solvers = solvers)
+            special_rm_idx = PortfolioOptimiser.find_special_rm(rm)
+            (; kurt_idx, skurt_idx, skew_idx, sskew_idx, wc_idx) = special_rm_idx
+            portfolio = Portfolio(; prices = prices[best_tickers], solvers = solvers)
             asset_statistics!(portfolio; cov_type = cov_type, cor_type = cor_type,
                               dist_type = dist_type, set_kurt = !isempty(kurt_idx),
-                              set_skurt = !isempty(skurt_idx), set_skew = set_skew,
-                              set_sskew = set_sskew)
-            cluster_assets!(portfolio; hclust_alg = hclust_alg, hclust_opt = hclust_opt)
+                              set_skurt = !isempty(skurt_idx),
+                              set_skew = !isempty(skew_idx),
+                              set_sskew = !isempty(sskew_idx))
+            cluster_assets!(portfolio; clust_alg = clust_alg, clust_opt = clust_opt)
 
-            w = optimise!(portfolio; type = HERC(), rm = rm)
+            w = optimise!(portfolio; type = HERC(; rm = rm))
             if isempty(w)
                 continue
             end
@@ -88,15 +90,17 @@ function filter_tickers(prices, solvers, fopt::FilterOpt = FilterOpt())
                 w1 = Float64[]
                 continue
             end
-            kurt_idx, skurt_idx, set_skew, set_sskew = PortfolioOptimiser.find_cov_kurt_skew_rm(rms)[2:end]
-            portfolio = HCPortfolio(; prices = prices[worst_tickers], solvers = solvers)
+            special_rm_idx = PortfolioOptimiser.find_special_rm(rm)
+            (; kurt_idx, skurt_idx, skew_idx, sskew_idx, wc_idx) = special_rm_idx
+            portfolio = Portfolio(; prices = prices[worst_tickers], solvers = solvers)
             asset_statistics!(portfolio; cov_type = cov_type, cor_type = cor_type,
                               dist_type = dist_type, set_kurt = !isempty(kurt_idx),
-                              set_skurt = !isempty(skurt_idx), set_skew = set_skew,
-                              set_sskew = set_sskew)
-            cluster_assets!(portfolio; hclust_alg = hclust_alg, hclust_opt = hclust_opt)
+                              set_skurt = !isempty(skurt_idx),
+                              set_skew = !isempty(skew_idx),
+                              set_sskew = !isempty(sskew_idx))
+            cluster_assets!(portfolio; clust_alg = clust_alg, clust_opt = clust_opt)
 
-            w = optimise!(portfolio; type = HERC(), rm = rm)
+            w = optimise!(portfolio, HERC(; rm = rm))
             if isempty(w)
                 continue
             end
@@ -116,13 +120,13 @@ end
     cov_type::T2 = PortCovCor()
     cor_type::T3 = PortCovCor()
     dist_type::T4 = DistCanonical()
-    hclust_alg::T5 = HAC()
-    hclust_opt::T6 = HCOpt()
+    clust_alg::T5 = HAC()
+    clust_opt::T6 = ClustOpt()
     short::T7 = false
     budget::T8 = 1.0
-    short_budget::T9 = 0.2
-    long_u::T10 = 1.0
-    short_u::T11 = 0.2
+    short_budget::T9 = -0.2
+    long_ub::T10 = 1.0
+    short_lb::T11 = -0.2
     rf::T12 = 3.5 / 100 / 252
     obj::T13 = Sharpe(; rf = rf)
     kelly::T14 = EKelly()
@@ -134,43 +138,35 @@ function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = O
     cov_type = oopt.cov_type
     cor_type = oopt.cor_type
     dist_type = oopt.dist_type
-    hclust_alg = oopt.hclust_alg
-    hclust_opt = oopt.hclust_opt
+    clust_alg = oopt.clust_alg
+    clust_opt = oopt.clust_opt
     short = oopt.short
     budget = oopt.budget
     short_budget = oopt.short_budget
-    long_u = oopt.long_u
-    short_u = oopt.short_u
+    long_ub = oopt.long_ub
+    short_lb = oopt.short_lb
     obj = oopt.obj
     rf = oopt.rf
     kelly = oopt.kelly
     alloc_method = oopt.alloc_method
 
-    kurt_idx, skurt_idx, set_skew, set_sskew = PortfolioOptimiser.find_cov_kurt_skew_rm(rms)[2:end]
+    special_rm_idx = PortfolioOptimiser.find_special_rm(rms)
+    (; kurt_idx, skurt_idx, skew_idx, sskew_idx, wc_idx) = special_rm_idx
 
     portfolio = Portfolio(; prices = prices, solvers = solvers,
                           alloc_solvers = alloc_solvers, short = short, budget = budget,
-                          short_budget = short_budget, long_u = long_u, short_u = short_u)
+                          short_budget = short_budget, long_ub = long_ub,
+                          short_lb = short_lb, w_max = short ? long_ub : 1.0,
+                          w_min = short ? short_lb : 0.0)
 
-    hctype = NCO(; opt_kwargs = (obj = obj, kelly = kelly),
-                 port_kwargs = (short = short, budget = budget, short_budget = short_budget,
-                                long_u = long_u, short_u = short_u))
-    hcportfolio = HCPortfolio(; prices = prices, solvers = solvers,
-                              alloc_solvers = alloc_solvers, w_min = short ? -short_u : 0,
-                              w_max = short ? long_u : 1)
+    type1 = Trad(; obj = obj, kelly = kelly)
+    type2 = NCO(; internal = NCOArgs(; type = type1), finaliser = JWF())
 
-    asset_statistics!(hcportfolio; cov_type = cov_type, cor_type = cor_type,
+    asset_statistics!(portfolio; cov_type = cov_type, cor_type = cor_type,
                       dist_type = dist_type, set_kurt = !isempty(kurt_idx),
-                      set_skurt = !isempty(skurt_idx), set_skew = set_skew,
-                      set_sskew = set_sskew)
-    cluster_assets!(hcportfolio; hclust_alg = hclust_alg, hclust_opt = hclust_opt)
-
-    portfolio.mu = hcportfolio.mu
-    portfolio.cov = hcportfolio.cov
-    portfolio.kurt = hcportfolio.kurt
-    portfolio.skurt = hcportfolio.skurt
-    portfolio.skew = hcportfolio.skew
-    portfolio.sskew = hcportfolio.sskew
+                      set_skurt = !isempty(skurt_idx), set_skew = !isempty(skew_idx),
+                      set_sskew = !isempty(sskew_idx))
+    cluster_assets!(portfolio; clust_alg = clust_alg, clust_opt = clust_opt)
 
     date0 = timestamp(prices)[1]
     date1 = timestamp(prices)[end]
@@ -185,62 +181,58 @@ function optimise(prices, solvers, alloc_solvers, investment, oopt::OptimOpt = O
         trm = PortfolioOptimiser.get_rm_symbol(rm)
         portfolios[trm] = Dict()
         title2 = "$title1 $trm"
-        w1 = optimise!(portfolio; rm = rm, obj = obj, kelly = kelly)
+        type1.rm = rm
+        w1 = optimise!(portfolio, type1)
         if !isempty(w1)
             title3 = "$(title2) T"
             portfolios[trm][:t] = Dict()
 
-            w1 = allocate!(portfolio; type = :Trad, method = alloc_method,
-                           investment = investment)
+            portfolio.optimal[:alloc1] = allocate!(portfolio, alloc_method; key = :Trad,
+                                                   investment = investment)
             if isempty(w1)
                 alloc_method = setdiff((LP(), Greedy()), (alloc_method,))[1]
-                w1 = allocate!(portfolio; method = alloc_method, investment = investment)
+                portfolio.optimal[:alloc1] = allocate!(portfolio, alloc_method; key = :Trad,
+                                                       investment = investment)
             end
 
-            portfolio.optimal[:alloc] = w1
-            sr = sharpe_ratio(portfolio; type = :alloc, rm = rm,
+            sr = sharpe_ratio(portfolio, :alloc1; rm = rm,
                               kelly = isa(kelly, NoKelly) ? false : true, rf = rf)
-            port_dd = plot_drawdown(portfolio; type = :alloc,
+            port_dd = plot_drawdown(portfolio, :alloc1;
                                     kwargs_ret = (title = title3,
                                                   label = "SR: $(round(sr*100, digits=3)) %",
                                                   legend = :best))
-            port_hist = plot_hist(portfolio; type = :alloc, kwargs_h = (title = title3,))
+            port_hist = plot_hist(portfolio, :alloc1; kwargs_h = (title = title3,))
 
-            portfolios[trm][:t][:w] = w1
+            portfolios[trm][:t][:w] = portfolio.optimal[:alloc1]
             portfolios[trm][:t][:sr] = sr
             portfolios[trm][:t][:dd] = port_dd
             portfolios[trm][:t][:h] = port_hist
         end
 
-        w2 = optimise!(hcportfolio; type = hctype, rm = rm)
+        w2 = optimise!(portfolio, type2)
         if !isempty(w2)
             title3 = "$(title2) H"
             portfolios[trm][:h] = Dict()
 
-            w2 = allocate!(hcportfolio; type = Symbol(hctype), method = alloc_method,
-                           investment = investment, short = short, budget = budget,
-                           short_budget = short_budget)
+            portfolio.optimal[:alloc2] = allocate!(portfolio, alloc_method; key = :NCO,
+                                                   investment = investment)
             if isempty(w2)
                 alloc_method = setdiff((LP(), Greedy()), (alloc_method,))[1]
-                w2 = allocate!(hcportfolio; type = Symbol(hctype), method = alloc_method,
-                               investment = investment, short = short, budget = budget,
-                               short_budget = short_budget)
+                portfolio.optimal[:alloc2] = allocate!(portfolio, alloc_method; key = :NCO,
+                                                       investment = investment)
             end
 
-            hcportfolio.optimal[:alloc] = w2
-
-            hcsr = sharpe_ratio(hcportfolio; type = :alloc, rm = rm,
+            hcsr = sharpe_ratio(portfolio, :alloc2; rm = rm,
                                 kelly = isa(kelly, NoKelly) ? false : true)
-            hcport_dd = plot_drawdown(hcportfolio; type = :alloc,
+            hcport_dd = plot_drawdown(portfolio, :alloc2;
                                       kwargs_ret = (title = title3,
                                                     label = "SR: $(round(hcsr*100, digits=3)) %",
                                                     legend = :best))
-            hcport_hist = plot_hist(hcportfolio; type = :alloc,
-                                    kwargs_h = (title = title3,))
-            hcport_clst = plot_clusters(hcportfolio; cluster = false,
+            hcport_hist = plot_hist(portfolio, :alloc2; kwargs_h = (title = title3,))
+            hcport_clst = plot_clusters(portfolio; cluster = false,
                                         kwargs_d1 = (title = title2, titlefontsize = 10))
 
-            portfolios[trm][:h][:w] = w2
+            portfolios[trm][:h][:w] = portfolio.optimal[:alloc2]
             portfolios[trm][:h][:sr] = hcsr
             portfolios[trm][:h][:dd] = hcport_dd
             portfolios[trm][:h][:h] = hcport_hist
