@@ -1,5 +1,5 @@
 
-function (@main)(; solvers = Dict(), alloc_solvers = Dict(),
+function (@main)(; solvers = PortOptSolver(), alloc_solvers = PortOptSolver(),
                  # download
                  download = true,
                  markets::Union{<:AbstractString, AbstractVector{<:String}} = "",
