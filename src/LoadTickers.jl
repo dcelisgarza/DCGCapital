@@ -57,8 +57,10 @@ function join_ticker_prices(tickers, lopt::LoadOpt = LoadOpt())
         push!(missings, count(ismissing.(col)))
     end
 
-    prices = prices[!, missings .== StatsBase.mode(missings)]
-
-    return dropmissing!(prices)
+    m = StatsBase.mode(missings)
+    missings[1] = m
+    prices = prices[!, missings .== m]
+    dropmissing!(prices)
+    return sort!(prices, :timestamp)
 end
 export LoadOpt, load_ticker_prices, join_ticker_prices
