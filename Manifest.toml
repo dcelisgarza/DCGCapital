@@ -1238,7 +1238,7 @@ version = "1.4.3"
 
 [[deps.PortfolioOptimiser]]
 deps = ["AverageShiftedHistograms", "Clustering", "DataFrames", "Dates", "Distances", "Distributions", "GLM", "Graphs", "JuMP", "LinearAlgebra", "MultivariateStats", "NearestCorrelationMatrix", "Optim", "PythonCall", "Random", "SimpleWeightedGraphs", "SmartAsserts", "SparseArrays", "Statistics", "StatsBase", "TimeSeries"]
-git-tree-sha1 = "c68f828083eadd6f5a661c9c8539f43931ddee9d"
+git-tree-sha1 = "163c30abb6fef514d645e42d5bd31ed38fd5c421"
 repo-rev = "main"
 repo-url = "https://github.com/dcelisgarza/PortfolioOptimiser.jl"
 uuid = "748726ae-2fc6-4ae6-b81c-5fed3516a822"
